@@ -1,0 +1,16 @@
+{
+  "name": "Fill and Hug",
+  "id": "1262292896978164340",
+  "api": "1.0.0",
+  "main": "./dist/code.js",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "editorType": [
+    "figma"
+  ],
+  "menu": [
+    {"name": "Fill Container Horizontally", "command": "fill-x"},
+    {"name": "Hug Contents Vertically", "command": "hug-y"},
+    {"name": "Set Direction", "command": "direction"}
+  ]
+}
