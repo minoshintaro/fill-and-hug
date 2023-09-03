@@ -1,25 +1,24 @@
-import { setLayoutMode, setFilledContainer, setHuggedContent } from "./setProp";
+import { getLayoutMode } from "./getProp";
+import { setFilledContainer, setHuggedContent, setFlexDirection } from "./setProp";
 
-let message = 'Not changed';
-
-
+let message: string = 'Not changed'
 
 figma.on('run', ({ command }: RunEvent) => {
-  for (const node of figma.currentPage.selection) {
+  for (const selectedNode of figma.currentPage.selection) {
     switch (command) {
-      case 'direction': {
-        setLayoutMode(node);
-        message = `Set ${'layoutMode' in node ? node.layoutMode : 'lorem'}`;
-        break;
-      }
-      case 'fill-x': {
-        setFilledContainer(node);
+      case 'fill': {
+        setFilledContainer(selectedNode);
         message = 'Filled';
         break;
       }
-      case 'hug-y': {
-        setHuggedContent(node);
+      case 'hug': {
+        setHuggedContent(selectedNode);
         message = 'Hugged';
+        break;
+      }
+      case 'direction': {
+        setFlexDirection(selectedNode);
+        message = `Set ${getLayoutMode(selectedNode) === 'HORIZONTAL' ? 'Row' : 'Column'}`;
         break;
       }
       default: break;
