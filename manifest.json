@@ -9,8 +9,8 @@
     "figma"
   ],
   "menu": [
-    {"name": "Fill Container Horizontally", "command": "fill"},
-    {"name": "Hug Contents Vertically", "command": "hug"},
-    {"name": "Set Direction", "command": "direction"}
+    {"name": "Fill Container Horizontally", "command": "FILL"},
+    {"name": "Hug Contents Vertically", "command": "HUG"},
+    {"name": "Set Direction", "command": "DIRECTION"}
   ]
 }

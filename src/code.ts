@@ -1,22 +1,22 @@
-import { getLayoutMode } from "./getProp";
-import { setFilledContainer, setHuggedContent, setFlexDirection } from "./setProp";
-
-let message: string = 'Not changed'
+import { getLayoutMode } from "./get";
+import { setFilledContainer, setHuggedContent, setFlexDirection } from "./set";
 
 figma.on('run', ({ command }: RunEvent) => {
+  let message: string = 'Not changed'
+
   for (const selectedNode of figma.currentPage.selection) {
     switch (command) {
-      case 'fill': {
+      case 'FILL': {
         setFilledContainer(selectedNode);
         message = 'Filled';
         break;
       }
-      case 'hug': {
+      case 'HUG': {
         setHuggedContent(selectedNode);
         message = 'Hugged';
         break;
       }
-      case 'direction': {
+      case 'DIRECTION': {
         setFlexDirection(selectedNode);
         message = `Set ${getLayoutMode(selectedNode) === 'HORIZONTAL' ? 'Row' : 'Column'}`;
         break;

@@ -1,4 +1,4 @@
-import { getParentLayoutMode } from "./getProp";
+import { getParentLayoutMode } from "./get";
 
 export function setFilledContainer(node: SceneNode): void {
   if ('layoutGrow' in node) {
