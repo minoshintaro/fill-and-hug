@@ -10,8 +10,11 @@
   ],
   "networkAccess": { "allowedDomains": ["none"] },
   "menu": [
-    {"name": "Fill Container Horizontally", "command": "FILL"},
-    {"name": "Hug Contents Vertically", "command": "HUG"},
+    {"name": "Fill Container Horizontally", "command": "FILL_H"},
+    {"name": "Fill Container Vertically", "command": "FILL_V"},
+    {"name": "Hug Contents Horizontally", "command": "HUG_H"},
+    {"name": "Hug Contents Vertically", "command": "HUG_V"},
+    { "separator": true },
     {"name": "Set Direction", "command": "SET_DIRECTION"}
   ]
 }

@@ -1,51 +1,68 @@
-import { setFilledContainer, setHuggedContent, setFlexDirection, setPositionBasedOnNodes, setColumnLayout, setSortedChildrenByPosition } from "./set";
+import { getAxisType } from "./features/getAxisType";
+import { hasStretchItem } from "./utils/hasStretchItem";
+import { setFixedSizingForContainer, setAutoSizingForContainer } from "./features/setSizingForContainer";
+import { setStretchedForItem, setUnstretchedForItem } from "./features/setLayoutForItem";
 
-const selectedNodes = figma.currentPage.selection;
-const { length } = selectedNodes;
-if (!length) figma.closePlugin('No selections');
+/**
+ * # [1] レイアウトコンテナ
+ * ## 主軸の設定（ComponentNode | ComponentSetNode | FrameNode | InstanceNode）
+ * - layoutMode: 'NONE' | 'HORIZONTAL' | 'VERTICAL'
+ *
+ * ## コンテナのサイズ
+ * - 【主軸】PrimaryAxisSizingMode: 'FIXED' | 'AUTO'
+ * - 【副軸】CounterAxisSizingMode: 'FIXED' | 'AUTO'
+ * 結果、
+ * - Fixed width: 'FIXED'
+ *   - 【条件】親が Autolayout、自身が Fill container
+ * - Hug contents: 'AUTO'
+ *   - 【条件】親が Autolayout、自身が Fill container ではない
+ *
+ * # [2] レイアウトアイテム
+ * ## アイテムの伸張
+ * - 【主軸】layoutGrow: 0 | 1
+ * - 【副軸】layoutAlign: 'INHERIT' | 'STRETCH'
+ * 結果、
+ * - Fill container: 1 | 'STRETCH'
+ *   - 【条件】親が AutoLayout
+ *   - 【条件】自身が AutoLayout なら、自身の AxisSizingMode は 'FIXED'
+ */
 
 figma.on('run', ({ command }: RunEvent) => {
-  let closingMessage: string = 'Not changed';
-
-  switch (command) {
-  case 'FILL': {
-    selectedNodes.forEach(node => setFilledContainer(node));
-    closingMessage = 'Filled';
-    break;
+  const selectedNodes: readonly SceneNode[] = figma.currentPage.selection;
+  if (selectedNodes.length === 0) {
+    figma.closePlugin('No selection');
+    return;
   }
 
-  case 'HUG': {
-    selectedNodes.forEach(node => setHuggedContent(node));
-    closingMessage = 'Hugged';
-    break;
-  }
+  const isFilling: boolean = ['FILL_H', 'FILL_V'].includes(command);
+  const isHugging: boolean = ['HUG_H', 'HUG_V'].includes(command);
 
-  case 'SET_DIRECTION': {
-    const firstNode = selectedNodes[0];
-    if (length === 1 && 'layoutMode' in firstNode) {
-      setFlexDirection(firstNode);
-      closingMessage = `Set ${firstNode.layoutMode === 'HORIZONTAL' ? 'horizontal layout' : 'vertical layout'}`;
-    } else {
-      const { parent } = firstNode;
-      if (!parent) return;
+  for (const node of selectedNodes) {
+    if (node.parent && 'layoutMode' in node.parent && node.parent.layoutMode !== 'NONE') {
+      const axis = getAxisType(command, node.parent.layoutMode); // => PRIMARY | COUNTER
 
-      // 新規フレームを生成 -> 選択ノードを基準に配置
-      const newFrame = figma.createFrame();
-      setPositionBasedOnNodes(newFrame, selectedNodes);
-
-      // 親ノード内での選択ノードの順番 -> 親ノード内に新規フレームを配置
-      const targetOrder = parent.children.indexOf(firstNode);
-      parent.insertChild(targetOrder, newFrame);
-
-      // 新規フレーム内に選択ノードを配置 ->
-      selectedNodes.forEach(node => newFrame.appendChild(node));
-      setSortedChildrenByPosition(newFrame);
-      setColumnLayout(newFrame);
-
-      closingMessage = 'Auto layout added';
+      if (isFilling && !hasStretchItem(node.parent.children, axis)) {
+        setFixedSizingForContainer(node.parent, axis);
+      }
+      if (isFilling) {
+        setStretchedForItem(node, axis);
+      }
+      if (isHugging) {
+        setUnstretchedForItem(node, axis);
+      }
     }
-    break;
+
+    if ('layoutMode' in node && node.layoutMode !== 'NONE') {
+      const axis = getAxisType(command, node.layoutMode); // => PRIMARY | COUNTER
+
+      if (isFilling) {
+        setFixedSizingForContainer(node, axis);
+      }
+      if (isHugging) {
+        setAutoSizingForContainer(node, axis);
+      }
+    }
   }
-  }
-  figma.closePlugin(closingMessage);
+
+  figma.closePlugin(isFilling ? 'Filled' : 'Hugged');
 });
