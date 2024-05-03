@@ -1,30 +1,21 @@
+import { createLayoutContainer } from "./features/createLayoutContainer";
 import { getAxisType } from "./features/getAxisType";
 import { hasStretchItem } from "./utils/hasStretchItem";
-import { setFixedSizingForContainer, setAutoSizingForContainer } from "./features/setSizingForContainer";
-import { setStretchedForItem, setUnstretchedForItem } from "./features/setLayoutForItem";
+import { setContainerSizingByCommand } from "./features/setContainerSizingByCommand";
+import { setDirectionForContainer } from "./features/setDirectionForContainer";
+import { setItemLayoutByCommand } from "./features/setItemLayoutByCommand";
 
-/**
- * # [1] レイアウトコンテナ
+/** # レイアウトコンテナ
  * ## 主軸の設定（ComponentNode | ComponentSetNode | FrameNode | InstanceNode）
  * - layoutMode: 'NONE' | 'HORIZONTAL' | 'VERTICAL'
  *
  * ## コンテナのサイズ
- * - 【主軸】PrimaryAxisSizingMode: 'FIXED' | 'AUTO'
- * - 【副軸】CounterAxisSizingMode: 'FIXED' | 'AUTO'
- * 結果、
- * - Fixed width: 'FIXED'
- *   - 【条件】親が Autolayout、自身が Fill container
- * - Hug contents: 'AUTO'
- *   - 【条件】親が Autolayout、自身が Fill container ではない
+ * - 【主軸】PrimaryAxisSizingMode: 'FIXED' | 'AUTO' => Fill container ※自身もレイアウトアイテム、かつ Grow: 1 | Align: 'STRETCH'
+ * - 【副軸】CounterAxisSizingMode: 'FIXED' | 'AUTO' => Hug contents ※自身もレイアウトアイテムなら、Grow: 0 | Align: 'INHERIT'
  *
- * # [2] レイアウトアイテム
  * ## アイテムの伸張
  * - 【主軸】layoutGrow: 0 | 1
  * - 【副軸】layoutAlign: 'INHERIT' | 'STRETCH'
- * 結果、
- * - Fill container: 1 | 'STRETCH'
- *   - 【条件】親が AutoLayout
- *   - 【条件】自身が AutoLayout なら、自身の AxisSizingMode は 'FIXED'
  */
 
 figma.on('run', ({ command }: RunEvent) => {
@@ -34,35 +25,33 @@ figma.on('run', ({ command }: RunEvent) => {
     return;
   }
 
-  const isFilling: boolean = ['FILL_H', 'FILL_V'].includes(command);
-  const isHugging: boolean = ['HUG_H', 'HUG_V'].includes(command);
+  const isFilling = ['FILL_H', 'FILL_V'].includes(command);
 
-  for (const node of selectedNodes) {
-    if (node.parent && 'layoutMode' in node.parent && node.parent.layoutMode !== 'NONE') {
-      const axis = getAxisType(command, node.parent.layoutMode); // => PRIMARY | COUNTER
-
-      if (isFilling && !hasStretchItem(node.parent.children, axis)) {
-        setFixedSizingForContainer(node.parent, axis);
+  switch (command) {
+    case 'SET_DIRECTION':
+      if (
+        selectedNodes.length === 1 &&
+        (selectedNodes[0].type === 'FRAME' || selectedNodes[0].type === 'COMPONENT' || selectedNodes[0].type === 'COMPONENT_SET')
+      ) {
+        setDirectionForContainer(selectedNodes[0]);
+      } else {
+        createLayoutContainer(selectedNodes);
       }
-      if (isFilling) {
-        setStretchedForItem(node, axis);
+      figma.closePlugin('Set Direction');
+      break;
+    default:
+      for (const node of selectedNodes) {
+        if (node.parent && 'layoutMode' in node.parent && node.parent.layoutMode !== 'NONE') {
+          const axis = getAxisType(command, node.parent.layoutMode);
+          if (isFilling && !hasStretchItem(node.parent.children, axis)) setContainerSizingByCommand(node.parent, axis);
+          setItemLayoutByCommand(node, axis);
+        }
+        if ('layoutMode' in node && node.layoutMode !== 'NONE') {
+          const axis = getAxisType(command, node.layoutMode);
+          setContainerSizingByCommand(node, axis);
+        }
       }
-      if (isHugging) {
-        setUnstretchedForItem(node, axis);
-      }
-    }
-
-    if ('layoutMode' in node && node.layoutMode !== 'NONE') {
-      const axis = getAxisType(command, node.layoutMode); // => PRIMARY | COUNTER
-
-      if (isFilling) {
-        setFixedSizingForContainer(node, axis);
-      }
-      if (isHugging) {
-        setAutoSizingForContainer(node, axis);
-      }
-    }
+      figma.closePlugin(isFilling ? 'Filled container' : 'Hugged contents');
+      break;
   }
-
-  figma.closePlugin(isFilling ? 'Filled' : 'Hugged');
 });

@@ -1,4 +1,4 @@
-export function getAxisType(input: string, mode: AutoLayoutMixin['layoutMode']): string {
+export function getAxisType(input: string, mode: AutoLayoutMixin['layoutMode']): 'PRIMARY' | 'COUNTER' | 'NONE' {
   switch (input) {
     case 'FILL_H':
     case 'HUG_H':
