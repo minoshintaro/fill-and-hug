@@ -1,6 +1,6 @@
-export function hasStretchItem(nodes: ReadonlyArray<SceneNode>, axisType: string): boolean {
+export function hasStretchItem(nodes: ReadonlyArray<SceneNode>, axis: string): boolean {
   return nodes.some(node => (
-    (axisType === 'PRIMARY' && 'layoutGrow' in node && node.layoutGrow === 1) ||
-    (axisType === 'COUNTER' && 'layoutAlign' in node && node.layoutAlign === 'STRETCH')
+    (axis === 'PRIMARY' && 'layoutGrow' in node && node.layoutGrow === 1) ||
+    (axis === 'COUNTER' && 'layoutAlign' in node && node.layoutAlign === 'STRETCH')
   ));
 }

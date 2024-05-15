@@ -1,5 +1,5 @@
 {
-  "name": "Fill and Hug",
+  "name": "Hug and Fill",
   "id": "1262292896978164340",
   "api": "1.0.0",
   "main": "./dist/code.js",
@@ -10,10 +10,14 @@
   ],
   "networkAccess": { "allowedDomains": ["none"] },
   "menu": [
-    {"name": "Fill Container Horizontally", "command": "FILL_H"},
-    {"name": "Fill Container Vertically", "command": "FILL_V"},
     {"name": "Hug Contents Horizontally", "command": "HUG_H"},
+    {"name": "Fill Container Horizontally", "command": "FILL_H"},
+    { "separator": true },
     {"name": "Hug Contents Vertically", "command": "HUG_V"},
+    {"name": "Fill Container Vertically", "command": "FILL_V"},
+    { "separator": true },
+    {"name": "Toggle Horizontal Sizing", "command": "TOGGLE_H"},
+    {"name": "Toggle Vertical Sizing", "command": "TOGGLE_V"},
     { "separator": true },
     {"name": "Set Direction", "command": "SET_DIRECTION"}
   ]

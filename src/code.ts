@@ -1,57 +1,80 @@
+import { canFill, canHug } from "./utils/canDo";
 import { createLayoutContainer } from "./features/createLayoutContainer";
-import { getAxisType } from "./features/getAxisType";
-import { hasStretchItem } from "./utils/hasStretchItem";
-import { setContainerSizingByCommand } from "./features/setContainerSizingByCommand";
-import { setDirectionForContainer } from "./features/setDirectionForContainer";
-import { setItemLayoutByCommand } from "./features/setItemLayoutByCommand";
+import { getCommandByLayoutSizing } from "./features/getCommandByLayoutSizing";
+import { getTargetAxisByCommand } from "./utils/getTargetAxisByCommand";
+import { setDirection } from "./features/setDirection";
 
-/** # レイアウトコンテナ
- * ## 主軸の設定（ComponentNode | ComponentSetNode | FrameNode | InstanceNode）
- * - layoutMode: 'NONE' | 'HORIZONTAL' | 'VERTICAL'
- *
- * ## コンテナのサイズ
- * - 【主軸】PrimaryAxisSizingMode: 'FIXED' | 'AUTO' => Fill container ※自身もレイアウトアイテム、かつ Grow: 1 | Align: 'STRETCH'
- * - 【副軸】CounterAxisSizingMode: 'FIXED' | 'AUTO' => Hug contents ※自身もレイアウトアイテムなら、Grow: 0 | Align: 'INHERIT'
- *
- * ## アイテムの伸張
- * - 【主軸】layoutGrow: 0 | 1
- * - 【副軸】layoutAlign: 'INHERIT' | 'STRETCH'
- */
+const message = {
+  set: 'Set Direction',
+  fix: 'Fixed',
+  hug: 'Hugged',
+  fill: 'Filled',
+  stop: 'No Your Selection',
+  none: 'No Changed',
+};
 
 figma.on('run', ({ command }: RunEvent) => {
-  const selectedNodes: readonly SceneNode[] = figma.currentPage.selection;
-  if (selectedNodes.length === 0) {
-    figma.closePlugin('No selection');
+  const nodes: readonly SceneNode[] = figma.currentPage.selection;
+
+  if (nodes.length === 0) {
+    figma.closePlugin(message.stop);
     return;
   }
 
-  const isFilling = ['FILL_H', 'FILL_V'].includes(command);
-
-  switch (command) {
-    case 'SET_DIRECTION':
-      if (
-        selectedNodes.length === 1 &&
-        (selectedNodes[0].type === 'FRAME' || selectedNodes[0].type === 'COMPONENT' || selectedNodes[0].type === 'COMPONENT_SET')
-      ) {
-        setDirectionForContainer(selectedNodes[0]);
-      } else {
-        createLayoutContainer(selectedNodes);
-      }
-      figma.closePlugin('Set Direction');
-      break;
-    default:
-      for (const node of selectedNodes) {
-        if (node.parent && 'layoutMode' in node.parent && node.parent.layoutMode !== 'NONE') {
-          const axis = getAxisType(command, node.parent.layoutMode);
-          if (isFilling && !hasStretchItem(node.parent.children, axis)) setContainerSizingByCommand(node.parent, axis);
-          setItemLayoutByCommand(node, axis);
-        }
-        if ('layoutMode' in node && node.layoutMode !== 'NONE') {
-          const axis = getAxisType(command, node.layoutMode);
-          setContainerSizingByCommand(node, axis);
-        }
-      }
-      figma.closePlugin(isFilling ? 'Filled container' : 'Hugged contents');
-      break;
+  if (command === 'SET_DIRECTION') {
+    if (nodes.length === 1 && (nodes[0].type === 'FRAME' || nodes[0].type === 'COMPONENT' || nodes[0].type === 'COMPONENT_SET')) {
+      setDirection(nodes[0]);
+    } else {
+      createLayoutContainer(nodes);
+    }
+    figma.closePlugin(message.set);
+    return;
   }
+
+  let result = message.none;
+  for (const node of nodes) {
+    if ('layoutSizingHorizontal' in node && 'layoutSizingVertical' in node) {
+      const selfAxis = 'layoutMode' in node ? getTargetAxisByCommand(node.layoutMode) : 'NONE';
+      const parentAxis = node.parent && 'layoutMode' in node.parent ? getTargetAxisByCommand(node.parent.layoutMode) : 'NONE';
+
+      switch (getCommandByLayoutSizing(node, selfAxis, parentAxis)) {
+      case 'FIXED_H':
+        node.layoutSizingHorizontal = 'FIXED';
+        result = message.fix;
+        break;
+      case 'FIXED_V':
+        node.layoutSizingVertical = 'FIXED';
+        result = message.fix;
+        break;
+      case 'HUG_H':
+        if (canHug(node, parentAxis)) {
+          node.layoutSizingHorizontal = 'HUG';
+          result = message.hug;
+        }
+        break;
+      case 'HUG_V':
+        if (canHug(node, parentAxis)) {
+          node.layoutSizingVertical = 'HUG';
+          result = message.hug;
+        }
+        break;
+      case 'FILL_H':
+        if (canFill(node, parentAxis)) {
+          node.layoutSizingHorizontal = 'FILL';
+          result = message.fill;
+        }
+        break;
+      case 'FILL_V':
+        if (canFill(node, parentAxis)) {
+          node.layoutSizingVertical = 'FILL';
+          result = message.fill;
+        }
+        break;
+      default:
+        break;
+      }
+    }
+  }
+
+  figma.closePlugin(result);
 });
